@@ -1,8 +1,9 @@
 {
-  "name": "gulp-require-jquery-playground",
-  "private": true,
-  "dependencies": {
-	"jquery": "~1.11.0"
-  },
-  "devDependencies": {}
+	"name": "gulp-require-jquery-playground",
+	"private": true,
+	"dependencies": {
+		"jquery": "~1.11.0",
+		"requirejs": "~2.1.11"
+	},
+	"devDependencies": {}
 }

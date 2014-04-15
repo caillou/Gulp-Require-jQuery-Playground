@@ -1,17 +1,9 @@
-<!doctype html>
-<html>
-	<head>
-		<meta charset="utf-8">
-		<title>Gulp Require jQuery Playground</title>
-		<meta name="description" content="">
-		<meta name="viewport" content="width=device-width, initial-scale=1">
-
-		<link rel="stylesheet" href="styles/normalize.css">
-		<link rel="stylesheet" href="styles/main.css">
-
-	</head>
-	<body>
-		Testing Gulp Require and jQuery
-		<script src="scripts/main.js"></script>
-	</body>
-</html>
+{{#extend "layouts/layout"}}
+	{{#replace "content"}}
+		<ul>
+			{{#each pages}}
+			<li><a href="{{this}}">{{this}}</a></li>
+			{{/each}}
+		</ul>
+	{{/replace}}
+{{/extend}}
