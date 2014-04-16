@@ -115,13 +115,13 @@
 				$el = $(el);
 				$el.css('width', columnWidth + '%');
 
-				if (!$el.hasClass('js-split-colored')) {
+				if (!$el.hasClass('js-split-is-colored')) {
 					$el.css('background-color', getRandomColor())
-						.addClass('js-split-colored');
+						.addClass('js-split-is-colored');
 				}
 			});
 		});
-	}
+	};
 
 	define(['jquery'], function () {
 		return {
