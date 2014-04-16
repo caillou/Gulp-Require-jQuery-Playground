@@ -1,0 +1,14 @@
+body, html {
+	height: 100%;
+}
+
+.split-column {
+	height: 100%;
+	float: left;
+	position: relative;
+}
+.split-column-overlay {
+	position: absolute;
+	pointer-events: none;
+	background: #FFF;
+}
