@@ -1,7 +1,7 @@
 (function () {
 	'use strict';
 
-	var onDragEnterOrOver, getRandomColor, recalculate;
+	var onDragEnterOrOver, getRandomColor, recalculate, getDropRegion;
 
 	getRandomColor = function () {
 		var letters, color, i;
@@ -14,11 +14,36 @@
 		return color;
 	};
 
+	getDropRegion = function (x, y, width, height) {
+		var relativeDistanceToBottom, relativeDistanceToRight,
+			relativeDistanceToTop, relativeDistanceToLeft;
+
+		relativeDistanceToLeft = x / width;
+		relativeDistanceToTop = y / height;
+		relativeDistanceToRight = (width - x) / width;
+		relativeDistanceToBottom = (height - y) / height;
+
+		if (
+			relativeDistanceToLeft < relativeDistanceToTop &&
+			relativeDistanceToLeft < relativeDistanceToBottom &&
+			relativeDistanceToLeft < relativeDistanceToRight
+			) {
+			return 'left';
+		} else if (
+			relativeDistanceToTop < relativeDistanceToRight &&
+			relativeDistanceToTop < relativeDistanceToBottom
+		) {
+			return 'top';
+		} else if (relativeDistanceToBottom < relativeDistanceToRight) {
+			return 'bottom';
+		} else {
+			return 'right';
+		}
+	};
+
 	onDragEnterOrOver = function (e) {
 
-		var x, y, height, width, offset, $this, $overlay,
-			relativeDistanceToBottom, relativeDistanceToRight,
-			relativeDistanceToTop, relativeDistanceToLeft;
+		var x, y, height, width, offset, $this, $overlay, region;
 
 		$this = $(this);
 
@@ -35,15 +60,6 @@
 			return;
 		}
 
-		width = $this.width();
-		height = $this.height();
-
-
-		relativeDistanceToLeft = x / width;
-		relativeDistanceToTop = y / height;
-		relativeDistanceToRight = (width - x) / width;
-		relativeDistanceToBottom = (height - y) / height;
-
 		$overlay = $this.find('.split-column-overlay');
 		if (!$overlay.length) {
 			$overlay = $('<div class="split-column-overlay"/>');
@@ -54,42 +70,17 @@
 			);
 		}
 
-		if (
-			relativeDistanceToLeft < relativeDistanceToTop &&
-			relativeDistanceToLeft < relativeDistanceToBottom &&
-			relativeDistanceToLeft < relativeDistanceToRight
-			) {
-			$overlay.css({
-				top: 0,
-				bottom: 0,
-				left: 0,
-				right: '50%'
-			}).data('position', 'left');
-		} else if (
-			relativeDistanceToTop < relativeDistanceToRight &&
-			relativeDistanceToTop < relativeDistanceToBottom
-		) {
-			$overlay.css({
-				top: 0,
-				bottom: '50%',
-				left: 0,
-				right: 0
-			}).data('position', 'top');
-		} else if (relativeDistanceToBottom < relativeDistanceToRight) {
-			$overlay.css({
-				top: '50%',
-				bottom: 0,
-				left: 0,
-				right: 0
-			}).data('position', 'bottom');
-		} else {
-			$overlay.css({
-				top: 0,
-				bottom: 0,
-				left: '50%',
-				right: 0
-			}).data('position', 'right');
-		}
+		width = $this.width();
+		height = $this.height();
+
+		region = getDropRegion(x, y, width, height);
+		$overlay.data('region', region)
+			.css({
+				top: (region === 'bottom') ? '50%' : 0,
+				bottom: (region === 'top') ? '50%' : 0,
+				left: (region === 'right') ? '50%' : 0,
+				right: (region === 'left') ? '50%' : 0
+			});
 
 		if (e.preventDefault) {
 			e.preventDefault();
@@ -159,7 +150,7 @@
 					}
 
 					$dropTarget = $overlay.parent();
-					position = $overlay.data('position');
+					position = $overlay.data('region');
 					$overlay.remove();
 
 					removeRow = !$this.siblings().size();
