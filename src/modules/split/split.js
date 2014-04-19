@@ -16,7 +16,9 @@
 
 	onDragEnterOrOver = function (e) {
 
-		var x, y, height, width, offset, $this, distanceToBottom, distanceToRight, $overlay;
+		var x, y, height, width, offset, $this, $overlay,
+			relativeDistanceToBottom, relativeDistanceToRight,
+			relativeDistanceToTop, relativeDistanceToLeft;
 
 		$this = $(this);
 
@@ -36,8 +38,11 @@
 		width = $this.width();
 		height = $this.height();
 
-		distanceToRight = width - x;
-		distanceToBottom = height - y;
+
+		relativeDistanceToLeft = x / width;
+		relativeDistanceToTop = y / height;
+		relativeDistanceToRight = (width - x) / width;
+		relativeDistanceToBottom = (height - y) / height;
 
 		$overlay = $this.find('.split-column-overlay');
 		if (!$overlay.length) {
@@ -49,21 +54,28 @@
 			);
 		}
 
-		if (x < y && x < distanceToBottom && x < distanceToRight) {
+		if (
+			relativeDistanceToLeft < relativeDistanceToTop &&
+			relativeDistanceToLeft < relativeDistanceToBottom &&
+			relativeDistanceToLeft < relativeDistanceToRight
+			) {
 			$overlay.css({
 				top: 0,
 				bottom: 0,
 				left: 0,
 				right: '50%'
 			}).data('position', 'left');
-		} else if (y < distanceToRight && y < distanceToBottom) {
+		} else if (
+			relativeDistanceToTop < relativeDistanceToRight &&
+			relativeDistanceToTop < relativeDistanceToBottom
+		) {
 			$overlay.css({
 				top: 0,
 				bottom: '50%',
 				left: 0,
 				right: 0
 			}).data('position', 'top');
-		} else if (distanceToBottom < distanceToRight) {
+		} else if (relativeDistanceToBottom < relativeDistanceToRight) {
 			$overlay.css({
 				top: '50%',
 				bottom: 0,
