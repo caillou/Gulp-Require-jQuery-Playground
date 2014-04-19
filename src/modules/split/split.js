@@ -92,7 +92,7 @@
 
 		var $rows, rowHeight;
 
-		$rows = $el.find('.split-row');
+		$rows = $el.children('.split-row');
 
 		if (!$rows.length) {
 			return;
@@ -106,7 +106,7 @@
 			$el = $(el);
 			$el.css('height', rowHeight + '%');
 
-			$columns = $el.find('.split-column');
+			$columns = $el.children('.split-column');
 
 			if (!$columns.size()) {
 				throw 'Rows should not be empty.';
@@ -118,10 +118,13 @@
 				$el = $(el);
 				$el.css('width', columnWidth + '%');
 
-				if (!$el.hasClass('js-split-is-colored')) {
+				if ($el.prop('draggable') && !$el.hasClass('js-split-is-colored')) {
 					$el.css('background-color', getRandomColor())
 						.addClass('js-split-is-colored');
 				}
+
+				recalculate($el);
+
 			});
 		});
 	};
@@ -137,7 +140,9 @@
 				});
 
 				$el.on('dragend', '.split-column', function () {
-					var $this, $overlay, position, $dropTarget, removeRow;
+					var $this, $overlay, position, $dropTarget, removeRow,
+						$dropTargetRow, $newRow, $containerColumn, $fromParent,
+						unwrapColumns, unwrapRows;
 
 					$el.off('dragenter dragover');
 
@@ -153,16 +158,57 @@
 					position = $overlay.data('region');
 					$overlay.remove();
 
-					removeRow = !$this.siblings().size();
+					$fromParent = $this.parent();
+					$this.remove();
+
+					removeRow = !$fromParent.children().size();
 
 					if (removeRow) {
-						$this.parent().remove();
+						// Check if the row we remove has only one sibling and
+						// make sure it is unwrapped in that case.
+						unwrapColumns = $fromParent.siblings().size() === 1 &&
+							$fromParent.parent().hasClass('split-column');
+
+						if (unwrapColumns) {
+							$fromParent.parent().after(
+								$fromParent.siblings().children()
+							).remove();
+						} else {
+							$fromParent.remove();
+						}
+					}
+
+					// If a single colum containing rows remains in a row
+					// we unwrap the rows from that column.
+					unwrapRows = $fromParent.children().size() === 1 &&
+						$fromParent.children().children('.split-row').size();
+					if (unwrapRows) {
+						$fromParent.after($fromParent.children().children());
+						$fromParent.remove();
 					}
 
 					if (position === 'left') {
 						$dropTarget.before($this);
 					} else if (position === 'right') {
 						$dropTarget.after($this);
+					} else {
+						if ($dropTarget.siblings().size()) {
+							$containerColumn = $('<div class="split-column"/>');
+							$dropTarget.replaceWith($containerColumn);
+							$dropTargetRow = $('<div class="split-row"/>');
+							$dropTargetRow.append($dropTarget);
+							$containerColumn.append($dropTargetRow);
+						} else {
+							$dropTargetRow = $dropTarget.parent();
+						}
+
+						$newRow = $('<div class="split-row"/>').append($this);
+
+						if (position === 'top') {
+							$dropTargetRow.before($newRow);
+						} else {
+							$dropTargetRow.after($newRow);
+						}
 					}
 
 					recalculate($el);
