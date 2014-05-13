@@ -2,6 +2,7 @@
 'use strict';
 
 var gulp = require('gulp'),
+	fs = require('fs'),
 	open = require('open'),
 	handlebars = require('handlebars'),
 	_ = require('lodash'),
@@ -81,16 +82,18 @@ gulp.task('js', function (doneCallback) {
 });
 
 
+/**
+ * Compile Handlebars templates to HTML
+ * Make content of data/FILENAME.json available to template engine
+ */
 gulp.task('html', function (doneCallback) {
+	var config, pageTemplates, buildIndexPage;
 
-	// We start by registering all partials.
-	glob('{src/modules/**/*.hbs,src/layouts/**/*.hbs}', function (err, partials) {
-		if (err) {
-			throw err;
-		}
-		var config = {};
+	config = {};
 
-		config.partials = partials.reduce(function (memo, partialPath) {
+	// Registering all partials.
+	config.partials = glob.sync('{src/modules/**/*.hbs,src/layouts/**/*.hbs}')
+		.reduce(function (memo, partialPath) {
 			var ext, partialName;
 
 			ext = path.extname(partialPath);
@@ -101,35 +104,59 @@ gulp.task('html', function (doneCallback) {
 
 		}, {});
 
-		gulp.src('src/pages/**/*.hbs')
-			.pipe(plugins.consolidate('handlebars', config))
-			.pipe(plugins.extReplace('.html'))
-			.pipe(gulp.dest('build/pages'))
-			.on('end', function () {
-				glob('build/pages/**/*.html', function (err, pages) {
-					var data = {};
+	pageTemplates = glob.sync('src/pages/**/*.hbs');
 
-					if (err) {
-						throw err;
-					}
+	if (!pageTemplates.length) {
+		doneCallback();
+		return;
+	}
 
-					data.pages = pages.map(function (page) {
-						return page.replace(/^build\//, '');
-					});
+	buildIndexPage = _.after(
+		pageTemplates.length,
+		function () {
+			glob('build/pages/**/*.html', function (err, pages) {
+				var data = {};
 
-					_.extend(data, config);
+				if (err) {
+					throw err;
+				}
 
-					gulp.src('src/index.hbs')
-						.pipe(plugins.consolidate('handlebars', data, {useContents: true}))
-						.pipe(plugins.extReplace('.html'))
-						.pipe(gulp.dest('build'))
-						.on('end', function () {
-							doneCallback();
-						})
-						.pipe(plugins.connect.reload());
+				data.pages = pages.map(function (page) {
+					return page.replace(/^build\//, '');
 				});
 
+				_.extend(data, config);
+
+				gulp.src('src/index.hbs')
+					.pipe(plugins.consolidate('handlebars', data, {useContents: true}))
+					.pipe(plugins.extReplace('.html'))
+					.pipe(gulp.dest('build'))
+					.pipe(plugins.connect.reload())
+					.on('end', function () {
+						doneCallback();
+					});
 			});
+		}
+	);
+
+	pageTemplates.forEach(function (pageTemplatePath) {
+		var pageConfig, pageConfigFile;
+
+		pageConfig = {};
+		pageConfigFile = pageTemplatePath.replace(/.hbs$/, '.json');
+		if (fs.existsSync(pageConfigFile)) {
+			pageConfig = JSON.parse(
+				fs.readFileSync(pageConfigFile, 'utf8')
+			);
+		}
+
+		pageConfig = _.extend({}, config, pageConfig);
+
+		gulp.src(pageTemplatePath)
+			.pipe(plugins.consolidate('handlebars', pageConfig))
+			.pipe(plugins.extReplace('.html'))
+			.pipe(gulp.dest('build/pages'))
+			.on('end', buildIndexPage);
 	});
 });
 
